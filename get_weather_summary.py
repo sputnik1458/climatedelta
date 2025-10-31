@@ -50,6 +50,58 @@ def get_nearest_station(lat, lon, token):
     )
     return closest["id"], closest["name"], closest["latitude"], closest["longitude"]
 
+# --------------------------------------------------------------
+# Nearest station that has the daily‑normals CSV
+# --------------------------------------------------------------
+def get_closest_station_with_normals(lat, lon, token):
+    """
+    Query NOAA for stations in a ~2° box, then return the closest one
+    that yields a usable CSV containing the DLY‑TMAX‑NORMAL column.
+    """
+    base_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/stations"
+    params = {
+        "datasetid": "NORMAL_DLY",
+        "extent": f"{lat-1},{lon-1},{lat+1},{lon+1}",
+        "limit": 100,
+    }
+    headers = {"token": token}
+    resp = requests.get(base_url, params=params, headers=headers)
+    resp.raise_for_status()
+    stations = resp.json().get("results", [])
+
+    if not stations:
+        raise ValueError("No climate stations found near this location.")
+
+    # Sort stations by straight‑line distance first
+    stations.sort(key=lambda s: haversine(lat, lon,
+                                          s["latitude"], s["longitude"]))
+
+    # Try each station until we find one with a usable CSV
+    for s in stations:
+        station_id = s["id"]
+        # Build the CSV URL – the part after the colon is the station code
+        csv_url = (
+            "https://www.ncei.noaa.gov/data/normals-daily/1981-2010/access/"
+            + station_id.split(":")[1] + ".csv"
+        )
+        try:
+            df = pd.read_csv(csv_url, nrows=1)   # just peek at header
+            if "DLY-TMAX-NORMAL" in df.columns:
+                # We have a good station – fetch the full CSV later
+                return (
+                    station_id,
+                    s["name"],
+                    s["latitude"],
+                    s["longitude"],
+                )
+        except Exception:
+            # Either the CSV is missing or malformed – move on
+            continue
+
+    raise ValueError(
+        "No nearby station provides DLY‑TMAX‑NORMAL data."
+    )
+
 def get_normals_for_today(station_id, token, today):
     """Fetch daily normals for today from NOAA for the given station."""
     df = pd.read_csv("https://www.ncei.noaa.gov/data/normals-daily/1981-2010/access/" + station_id.split(':')[1] + ".csv")
@@ -133,12 +185,13 @@ if __name__ == "__main__":
     zip_code = input("Enter ZIP: ").strip()
     token = "hnVrhBmeSzXXPyMASciXwzgnsPIjGLIC"
     lat, lon = get_lat_lon_from_zip(zip_code)
-    station_id, station_name, s_lat, s_lon = get_nearest_station(lat, lon, token)
+    # station_id, station_name, s_lat, s_lon = get_nearest_station(lat, lon, token)
+    station_id, station_name, s_lat, s_lon = get_closest_station_with_normals(lat, lon, token)
     dist_km = haversine(lat, lon, s_lat, s_lon)
 
     print(f"Nearest climate station ({dist_km:.1f} km): {station_name} ({station_id})")
     normals = get_normals_for_today(station_id, token, today)
-    print(f"Normals for {today}: High: {normals['high_avg']}°F, Low: {normals['low_avg']}°F (1SD range: {normals['high_sd']}-{normals['low_sd']}°F)")
+    print(f"1981-2010 normals for {today}: High: {normals['high_avg']}°F, Low: {normals['low_avg']}°F (1SD range: {normals['high_sd']}-{normals['low_sd']}°F)")
 
     current_conditions = get_current_temp(lat,lon)
     print(f"Nearest weather station ({current_conditions['distance']:.1f} km): {current_conditions['citystate']} ({current_conditions['station']})")
