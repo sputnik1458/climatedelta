@@ -3,6 +3,29 @@ import requests
 from datetime import datetime, timezone
 import math
 import pandas as pd
+from geopy.geocoders import Nominatim
+
+def city_state_to_zip(city_state):
+    """
+    Convert a 'City, State' string to a ZIP code using Zippopotam.us API.
+    
+    Returns the first ZIP code found, or None if not found.
+    """
+    try:
+        city, state = [x.strip() for x in city_state.split(",")]
+        url = f"http://api.zippopotam.us/us/{state}/{city}"
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Return the first ZIP code
+            zip_code = data['places'][0]['post code']
+            return zip_code
+        else:
+            return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
 def get_lat_lon_from_zip(zip_code):
     """Get latitude and longitude from a ZIP code using Zippopotam.us."""
@@ -181,16 +204,33 @@ def get_current_temp(lat,lon):
 
 # Usage in your main script
 if __name__ == "__main__":
+    RESET = "\033[0m"
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
+    CYAN = "\033[36m"
+    WHITE = "\033[37m"
+
+    token = "hnVrhBmeSzXXPyMASciXwzgnsPIjGLIC"  # NOAA API token
     today = datetime.now(timezone.utc).date()
-    zip_code = input("Enter ZIP: ").strip()
-    token = "hnVrhBmeSzXXPyMASciXwzgnsPIjGLIC"
+
+    loc = input("Enter ZIP or (City, STATE): ").strip()
+    if (len(loc) == 5 and loc.isdigit()):
+        zip_code = loc
+    else:
+        print(f"Converting '{loc}' to ZIP code...")
+        zip_code = city_state_to_zip(loc)
+        print(f"Resolved to {zip_code}")
+
     lat, lon = get_lat_lon_from_zip(zip_code)
     print(f"Coordinates: {lat:.4f}, {lon:.4f}")
-    # station_id, station_name, s_lat, s_lon = get_nearest_station(lat, lon, token)
+
     station_id, station_name, s_lat, s_lon = get_closest_station_with_normals(lat, lon, token)
     dist_km = haversine(lat, lon, s_lat, s_lon)
-
     print(f"\nNearest climate station ({dist_km:.1f} km): {station_name} ({station_id})")
+
     normals = get_normals_for_today(station_id, token, today)
     print(f"\t1981-2010 normals for {today}: High: {normals['high_avg']}°F, Low: {normals['low_avg']}°F (1SD range: {normals['high_sd']}-{normals['low_sd']}°F)")
 
@@ -199,19 +239,19 @@ if __name__ == "__main__":
     print(f"\tCurrent Temperature: {current_conditions['temperature_F']:.1f}°F (High: {current_conditions['highlow'][0]}°F, Low: {current_conditions['highlow'][1]}°F)")
 
     delta_high = current_conditions['highlow'][0] - normals['high_avg']
-    delta_high_str = f"{delta_high:.1f}°F warmer" if delta_high > 0 else f"{-delta_high:.1f}°F cooler"
+    delta_high_str = f"{RED}{delta_high:.1f}°F warmer{RESET}" if delta_high > 0 else f"{CYAN}{-delta_high:.1f}°F cooler{RESET}"
     delta_low = current_conditions['highlow'][1] - normals['low_avg']
-    delta_low_str = f"{delta_low:.1f}°F warmer" if delta_low > 0 else f"{-delta_low:.1f}°F cooler"
-    print(f"\nToday's high is {delta_high_str} and today's low is {delta_low_str} versus the 1981-2010 average.")
+    delta_low_str = f"{RED}{delta_low:.1f}°F warmer{RESET}" if delta_low > 0 else f"{CYAN}{-delta_low:.1f}°F cooler{RESET}"
+    print(f"\nToday's high is {delta_high_str} and today's low is {delta_low_str} versus the 1981-2010 climate.")
 
     isHighInRange = normals['high_avg'] < normals['high_sd']
     isLowInRange = normals['low_avg'] > normals['low_sd']
 
     if isHighInRange and isLowInRange:
-        print("Both today's high and low are within the historical average.")
+        print(f"{GREEN}Both today's high and low are within the historical average.{RESET}")
     elif isHighInRange:
-        print("Today's high is within the historical average, but today's low is below that range.")
+        print(f"{CYAN}Today's high is within the historical average, but today's low is below that range.{RESET}")
     elif isLowInRange:
-        print("Today's low is within the historical average, but today's high is above that range.")
+        print(f"{RED}Today's low is within the historical average, but today's high is above that range.{RESET}")
     else:
-        print("Both today's high and low are outside 1 standard deviation of the historical average.")
+        print(f"{YELLOW}Both today's high and low are outside 1 standard deviation of the historical average.{RESET}")
