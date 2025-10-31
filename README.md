@@ -3,5 +3,7 @@ This site aims to show differences in current weather data when compared to hist
 
 
 TODOs:
-    * Pull historical data 
-    * Bootstrap all zipcode -> lat/long into a DB
+
+    * Determine high/low temps based on forcasted high/low > min/max daily temp > current temp
+
+    * Bootstrap all zipcode -> lat/lon into a DB
