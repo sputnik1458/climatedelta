@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="post" action="{{ url_for('index') }}" class="input-form">
+    <label for="location">Enter ZIP code or “City, State”:</label><br>
+    <input type="text" id="location" name="location"
+           placeholder="e.g. 02108 or Boston, MA"
+           required autofocus>
+    <button type="submit">Check Weather</button>
+</form>
+{% endblock %}

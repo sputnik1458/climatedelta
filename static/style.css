@@ -1,0 +1,39 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0 1rem;
+    background: #f8f9fa;
+    color: #212529;
+}
+header, footer {
+    text-align: center;
+    padding: 1rem 0;
+}
+header h1 { margin: 0; }
+main { max-width: 800px; margin: 2rem auto; }
+.input-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+input[type=text] {
+    padding: 0.5rem;
+    font-size: 1rem;
+}
+button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+.flash-messages { list-style:none; padding:0; }
+.flash-messages li.error { color:#dc3545; }
+.flash-messages li.success { color:#28a745; }
+.btn-back {
+    display: inline-block;
+    margin-top: 1rem;
+    text-decoration: none;
+    color: #fff;
+    background: #007bff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+}

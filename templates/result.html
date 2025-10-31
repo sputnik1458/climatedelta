@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Results for {{ location_input }} (ZIP {{ zip_code }})</h2>
+
+<p><strong>Coordinates:</strong> {{ lat | round(4) }}, {{ lon | round(4) }}</p>
+
+<h3>Climate station</h3>
+<ul>
+    <li><strong>Name:</strong> {{ station_name }}</li>
+    <li><strong>ID:</strong> {{ station_id }}</li>
+    <li><strong>Distance:</strong> {{ station_dist | round(1) }} km</li>
+</ul>
+
+<h3>1981‑2010 normals ({{ today }})</h3>
+<ul>
+    <li>High avg: {{ normals.high_avg | round(1) }}°F (±1 σ: {{ normals.high_sd | round(1) }}°F)</li>
+    <li>Low avg:  {{ normals.low_avg | round(1) }}°F (±1 σ: {{ normals.low_sd | round(1) }}°F)</li>
+</ul>
+
+<h3>Current observations ({{ current.timestamp }})</h3>
+<ul>
+    <li><strong>Station:</strong> {{ current.station }} – {{ current.citystate }}</li>
+    <li><strong>Temp:</strong> {{ current.temperature_F | round(1) }}°F</li>
+    <li><strong>High / Low (today):</strong>
+        {{ current.highlow[0] | round(1) }}°F / {{ current.highlow[1] | round(1) }}°F
+    </li>
+    <li><strong>Wind:</strong> {{ current.wind_speed_mps }} m/s</li>
+    <li><strong>Description:</strong> {{ current.text_description }}</li>
+</ul>
+
+<h3>How does today compare?</h3>
+<p>Today's high is {{ delta_high_html|safe }} and today's low is {{ delta_low_html|safe }}
+   versus the historic normals.</p>
+
+<a href="{{ url_for('index') }}" class="btn-back">← Check another location</a>
+{% endblock %}

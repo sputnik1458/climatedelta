@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Climate Delta</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>🌤️ Climate Delta</h1>
+        <p>Compare today’s weather to the 1981‑2010 normals.</p>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-messages">
+              {% for category, msg in messages %}
+                <li class="{{ category }}">{{ msg }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <small>Powered by <a href="https://github.com/sputnik1458/climatedelta/">climatedelta</a></small>
+    </footer>
+</body>
+</html>
