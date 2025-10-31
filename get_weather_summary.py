@@ -50,15 +50,23 @@ def get_nearest_station(lat, lon, token):
     )
     return closest["id"], closest["name"], closest["latitude"], closest["longitude"]
 
-def get_normals_for_today(station_id, token):
+def get_normals_for_today(station_id, token, today):
     """Fetch daily normals for today from NOAA for the given station."""
     df = pd.read_csv("https://www.ncei.noaa.gov/data/normals-daily/1981-2010/access/" + station_id.split(':')[1] + ".csv")
 
     result = df[df["DATE"]==f"{datetime.today().month}-{datetime.today().day}"]
 
+    high_avg = result[['DLY-TMAX-NORMAL']].iloc[0].item()
+    high_sd = high_avg + result[['DLY-TMAX-STDDEV']].iloc[0].item()
+    low_avg = result[['DLY-TMIN-NORMAL']].iloc[0].item()
+    low_sd = low_avg - result[['DLY-TMIN-STDDEV']].iloc[0].item()
+
     # Select specific columns
     # Divide by 10 to get deg F
-    return(result[['DLY-TMAX-NORMAL']].iloc[0].item()/10, result[['DLY-TMIN-NORMAL']].iloc[0].item()/10)
+    return({"high_avg": high_avg/10,
+            "high_sd": high_sd/10,
+            "low_avg": low_avg/10,
+            "low_sd": low_sd/10})
 
 def get_current_temp(lat,lon):
     """"Fetch current weather data from weather.gov given lat/lon."""
@@ -97,7 +105,6 @@ def get_current_temp(lat,lon):
     forecast_data = forecast_response.json()
     
     # Extract today's forcasted high and low
-    today = datetime.now(timezone.utc).date()
     
     f_high = forecast_data['properties']['periods'][0]['temperature']
     f_low = forecast_data['properties']['periods'][1]['temperature']
@@ -122,6 +129,7 @@ def get_current_temp(lat,lon):
 
 # Usage in your main script
 if __name__ == "__main__":
+    today = datetime.now(timezone.utc).date()
     zip_code = input("Enter ZIP: ").strip()
     token = "hnVrhBmeSzXXPyMASciXwzgnsPIjGLIC"
     lat, lon = get_lat_lon_from_zip(zip_code)
@@ -129,8 +137,8 @@ if __name__ == "__main__":
     dist_km = haversine(lat, lon, s_lat, s_lon)
 
     print(f"Nearest climate station ({dist_km:.1f} km): {station_name} ({station_id})")
-    n_high, n_low = get_normals_for_today(station_id, token)
-    print(f"Today's Normals - High: {n_high}°F, Low: {n_low}°F")
+    normals = get_normals_for_today(station_id, token, today)
+    print(f"Normals for {today}: High: {normals['high_avg']}°F, Low: {normals['low_avg']}°F (1SD range: {normals['high_sd']}-{normals['low_sd']}°F)")
 
     current_conditions = get_current_temp(lat,lon)
     print(f"Nearest weather station ({current_conditions['distance']:.1f} km): {current_conditions['citystate']} ({current_conditions['station']})")
