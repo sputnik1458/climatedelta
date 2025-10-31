@@ -104,8 +104,10 @@ def get_current_temp(lat,lon):
 
     # Set true high/low
     current_temp_f = (props['temperature']['value'] * 9/5) + 32
-    high = f_high if f_high > current_temp_f else current_temp_f
-    low = f_low if f_low < current_temp_f else current_temp_f
+    max_temp24_f = (props['maxTemperatureLast24Hours']['value'] * 9/5) + 32 if props['maxTemperatureLast24Hours']['value'] is not None else current_temp_f
+    min_temp24_f = (props['minTemperatureLast24Hours']['value'] * 9/5) + 32 if props['minTemperatureLast24Hours']['value'] is not None else current_temp_f
+    high = f_high if f_high > max_temp24_f else max_temp24_f
+    low = f_low if f_low < min_temp24_f else min_temp24_f
 
     return {
         "station": station_id,
