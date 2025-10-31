@@ -185,14 +185,33 @@ if __name__ == "__main__":
     zip_code = input("Enter ZIP: ").strip()
     token = "hnVrhBmeSzXXPyMASciXwzgnsPIjGLIC"
     lat, lon = get_lat_lon_from_zip(zip_code)
+    print(f"Coordinates: {lat:.4f}, {lon:.4f}")
     # station_id, station_name, s_lat, s_lon = get_nearest_station(lat, lon, token)
     station_id, station_name, s_lat, s_lon = get_closest_station_with_normals(lat, lon, token)
     dist_km = haversine(lat, lon, s_lat, s_lon)
 
-    print(f"Nearest climate station ({dist_km:.1f} km): {station_name} ({station_id})")
+    print(f"\nNearest climate station ({dist_km:.1f} km): {station_name} ({station_id})")
     normals = get_normals_for_today(station_id, token, today)
-    print(f"1981-2010 normals for {today}: High: {normals['high_avg']}°F, Low: {normals['low_avg']}°F (1SD range: {normals['high_sd']}-{normals['low_sd']}°F)")
+    print(f"\t1981-2010 normals for {today}: High: {normals['high_avg']}°F, Low: {normals['low_avg']}°F (1SD range: {normals['high_sd']}-{normals['low_sd']}°F)")
 
     current_conditions = get_current_temp(lat,lon)
     print(f"Nearest weather station ({current_conditions['distance']:.1f} km): {current_conditions['citystate']} ({current_conditions['station']})")
-    print(f"Current Temperature: {current_conditions['temperature_F']:.1f}°F (High: {current_conditions['highlow'][0]}°F, Low: {current_conditions['highlow'][1]}°F)")
+    print(f"\tCurrent Temperature: {current_conditions['temperature_F']:.1f}°F (High: {current_conditions['highlow'][0]}°F, Low: {current_conditions['highlow'][1]}°F)")
+
+    delta_high = current_conditions['highlow'][0] - normals['high_avg']
+    delta_high_str = f"{delta_high:.1f}°F warmer" if delta_high > 0 else f"{-delta_high:.1f}°F cooler"
+    delta_low = current_conditions['highlow'][1] - normals['low_avg']
+    delta_low_str = f"{delta_low:.1f}°F warmer" if delta_low > 0 else f"{-delta_low:.1f}°F cooler"
+    print(f"\nToday's high is {delta_high_str} and today's low is {delta_low_str} versus the 1981-2010 average.")
+
+    isHighInRange = normals['high_avg'] < normals['high_sd']
+    isLowInRange = normals['low_avg'] > normals['low_sd']
+
+    if isHighInRange and isLowInRange:
+        print("Both today's high and low are within the historical average.")
+    elif isHighInRange:
+        print("Today's high is within the historical average, but today's low is below that range.")
+    elif isLowInRange:
+        print("Today's low is within the historical average, but today's high is above that range.")
+    else:
+        print("Both today's high and low are outside 1 standard deviation of the historical average.")
