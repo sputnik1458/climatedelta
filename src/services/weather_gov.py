@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime
 from typing import Tuple, Dict
 
 
@@ -56,7 +57,7 @@ class WeatherGovService:
     # ------------------------------------------------------------------
     # Public façade
     # ------------------------------------------------------------------
-    def get_current_conditions(self, lat: float, lon: float) -> dict:
+    def get_current_conditions(self, lat: float, lon: float, today: datetime.date) -> dict:
         """
         Returns a dictionary with:
         - station identifier
@@ -79,11 +80,19 @@ class WeatherGovService:
 
         # 3️⃣ Forecast (high/low predictions)
         forecast_periods = self._forecast_data(self._forecast_url(point_meta))
-        f_high = forecast_periods[0]["temperature"]
-        f_low  = forecast_periods[1]["temperature"]
+        ## Subset to today's forecast periods
+        forecast_periods_today = [
+            entry for entry in forecast_periods
+            if datetime.fromisoformat(entry['startTime']).date() == today
+        ]
+        temps = [entry['temperature'] for entry in forecast_periods_today]
+
+        f_high = max(temps)
+        f_low  = min(temps)
 
         # ----- Temperature conversions -----
-        cur_f = (obs["temperature"]["value"] * 9 / 5) + 32
+        cur_f = (obs["temperature"]["value"] * 9 / 5) + 32 if obs["temperature"]["value"] is not None else None
+
         max24_f = (
             (obs["maxTemperatureLast24Hours"]["value"] * 9 / 5) + 32
             if obs["maxTemperatureLast24Hours"]["value"] is not None
@@ -95,8 +104,8 @@ class WeatherGovService:
             else cur_f
         )
 
-        high = max(f_high, max24_f)
-        low  = min(f_low,  min24_f)
+        high = max(f_high, max24_f) if max24_f is not None else f_high
+        low  = min(f_low,  min24_f) if min24_f is not None else f_low
 
         # ----- Assemble result -----
         city = point_meta["properties"]["relativeLocation"]["properties"]["city"]

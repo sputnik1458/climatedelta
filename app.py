@@ -60,7 +60,8 @@ def index():
         # ------------------------------------------------------------------
         station_svc = NOAAStationService()
         weather_svc = WeatherGovService()
-
+        today = datetime.now(timezone.utc).date()
+        
         try:
             app.logger.info("Getting valid NOAA station...")
             station_id, station_name, s_lat, s_lon = station_svc.get_closest_station_with_normals(
@@ -71,7 +72,7 @@ def index():
             app.logger.info("Getting climate normals...")
             normals = station_svc.get_normals_for_today(station_id)
             app.logger.info("Getting current conditions...")
-            current = weather_svc.get_current_conditions(lat, lon)
+            current = weather_svc.get_current_conditions(lat, lon, today)
 
         except Exception as exc:
             flash(f"Data retrieval error: {exc}", "error")
@@ -96,7 +97,7 @@ def index():
             station_id=station_id,
             station_dist=dist_to_station,
             normals=normals,
-            today=datetime.now(timezone.utc).date(),
+            today=today,
             current=current,
             delta_high_html=colourize(delta_high),
             delta_low_html=colourize(delta_low),

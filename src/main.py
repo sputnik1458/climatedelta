@@ -66,7 +66,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     # 5️⃣ Pull current observations from weather.gov
     # ------------------------------------------------------------------
-    current = weather_service.get_current_conditions(lat, lon)
+    current = weather_service.get_current_conditions(lat, lon, today)
     print(
         f"Nearest weather station ({current['distance']:.1f} km): "
         f"{current['citystate']} ({current['station']})"
